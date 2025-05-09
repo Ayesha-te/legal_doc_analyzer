@@ -1,16 +1,14 @@
 import streamlit as st
 import openai
 from langchain.text_splitter import CharacterTextSplitter
-from langchain.embeddings.openai import OpenAIEmbeddings
+from langchain.embeddings import OpenAIEmbeddings
 from langchain.vectorstores import FAISS
 from langchain.llms import OpenAI
-from langchain.prompts import PromptTemplate
-from langchain.chains import LLMChain
 from langchain.chains.question_answering import load_qa_chain
 import os
 
 # Set up OpenAI API Key from Streamlit secrets
-openai.api_key = st.secrets["openai_api_key"]
+openai.api_key = st.secrets["openai"]["openai_api_key"]
 
 # Streamlit UI
 st.title("Legal Document Analyzer")
@@ -48,7 +46,7 @@ if uploaded_file is not None:
     chunks = text_splitter.split_text(document)
 
     # Create OpenAI embeddings and FAISS vector store for document search
-    embeddings = OpenAIEmbeddings()
+    embeddings = OpenAIEmbeddings(openai_api_key=st.secrets["openai"]["openai_api_key"])
     vectorstore = FAISS.from_texts(chunks, embeddings)
 
     # Create a simple LLM chain for question answering
@@ -69,4 +67,6 @@ if uploaded_file is not None:
     st.subheader("Document Chunks (for reference):")
     for i, chunk in enumerate(chunks[:5]):  # Show first 5 chunks
         st.write(f"Chunk {i+1}: {chunk[:500]}...")
+
+
 
