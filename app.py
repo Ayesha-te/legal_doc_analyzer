@@ -7,8 +7,7 @@ from langchain.llms import OpenAI
 from langchain.chains.question_answering import load_qa_chain
 import os
 
-# Set up OpenAI API Key from Streamlit secrets
-openai.api_key = st.secrets["openai"]["openai_api_key"]
+openai_api_key = st.secrets["openai_api_key"]
 
 # Streamlit UI
 st.title("Legal Document Analyzer")
