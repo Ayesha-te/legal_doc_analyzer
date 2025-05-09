@@ -7,7 +7,8 @@ from langchain.llms import OpenAI
 from langchain.chains.question_answering import load_qa_chain
 import os
 
-openai_api_key = st.secrets["openai_api_key"]
+# Set up OpenAI API Key from Streamlit secrets
+openai.api_key = st.secrets["openai"]["openai_api_key"]
 
 # Streamlit UI
 st.title("Legal Document Analyzer")
@@ -49,7 +50,7 @@ if uploaded_file is not None:
     vectorstore = FAISS.from_texts(chunks, embeddings)
 
     # Create a simple LLM chain for question answering
-    qa_chain = load_qa_chain(OpenAI(temperature=0))
+    qa_chain = load_qa_chain(OpenAI(temperature=0, openai_api_key=st.secrets["openai"]["openai_api_key"]))
 
     # Text box for input question
     question = st.text_input("Ask a question about the document:")
@@ -66,6 +67,4 @@ if uploaded_file is not None:
     st.subheader("Document Chunks (for reference):")
     for i, chunk in enumerate(chunks[:5]):  # Show first 5 chunks
         st.write(f"Chunk {i+1}: {chunk[:500]}...")
-
-
 
