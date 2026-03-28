@@ -1,13 +1,12 @@
 import streamlit as st
-import openai
+from openai import OpenAI
 from langchain_text_splitters import CharacterTextSplitter
 from langchain_community.vectorstores import FAISS
-from langchain.chains.question_answering import load_qa_chain
-from langchain_openai import OpenAI, OpenAIEmbeddings
-import os
+from langchain_openai import OpenAIEmbeddings
 
-# Set up OpenAI API Key from Streamlit secrets
-openai.api_key = st.secrets["openai"]["openai_api_key"]
+
+api_key = st.secrets["openai"]["openai_api_key"]
+client = OpenAI(api_key=api_key)
 
 # Streamlit UI
 st.title("Legal Document Analyzer")
@@ -35,6 +34,32 @@ def process_document(uploaded_file):
 
     return document
 
+
+def answer_question(question, relevant_docs):
+    context = "\n\n".join(doc.page_content for doc in relevant_docs)
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        temperature=0,
+        messages=[
+            {
+                "role": "system",
+                "content": (
+                    "You answer questions about legal documents using only the "
+                    "provided context. If the answer is not in the context, say so."
+                ),
+            },
+            {
+                "role": "user",
+                "content": (
+                    f"Context:\n{context}\n\n"
+                    f"Question: {question}\n\n"
+                    "Answer clearly and concisely."
+                ),
+            },
+        ],
+    )
+    return response.choices[0].message.content.strip()
+
 # If a file is uploaded
 if uploaded_file is not None:
     document = process_document(uploaded_file)
@@ -45,11 +70,8 @@ if uploaded_file is not None:
     chunks = text_splitter.split_text(document)
 
     # Create OpenAI embeddings and FAISS vector store for document search
-    embeddings = OpenAIEmbeddings(openai_api_key=st.secrets["openai"]["openai_api_key"])
+    embeddings = OpenAIEmbeddings(openai_api_key=api_key)
     vectorstore = FAISS.from_texts(chunks, embeddings)
-
-    # Create a simple LLM chain for question answering
-    qa_chain = load_qa_chain(OpenAI(temperature=0, openai_api_key=st.secrets["openai"]["openai_api_key"]))
 
     # Text box for input question
     question = st.text_input("Ask a question about the document:")
@@ -58,8 +80,8 @@ if uploaded_file is not None:
         # Perform similarity search and retrieve the most relevant chunk
         relevant_docs = vectorstore.similarity_search(question, k=3)
 
-        # Use QA chain to answer the question based on relevant docs
-        answer = qa_chain.run(input_documents=relevant_docs, question=question)
+        # Answer the question based on the retrieved chunks
+        answer = answer_question(question, relevant_docs)
         st.write(f"Answer: {answer}")
     
     # Show the text chunks for reference
